@@ -1,0 +1,12 @@
+# This file should be loaded after GDB Dashboard's gdbinit
+
+# Reset the "better" defaults in dashboard gdbinit to those which are even better to me
+set history save off
+set confirm on
+set print pretty on
+set print array off
+set print array-indexes off
+set python print-stack message
+
+# Reset prompt to the more familiar one
+dashboard -style prompt '(gdb)'
