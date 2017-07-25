@@ -18,6 +18,12 @@ class x86gpr(Dashboard.Module):
         else:
             return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
 
+    def formatAndUpdateFlag(self,name,value):
+        key='flag'+name
+        changed=self.table and self.table.get(key,'')!=value
+        self.table[key]=value
+        return self.formatReg(name[0],value,changed)
+
     def linesGPR(self,termWidth,styleChanged):
         if self.bits==32:
             regNames=["EAX","ECX","EDX","EBX","ESP","EBP","ESI","EDI"]
@@ -56,6 +62,52 @@ class x86gpr(Dashboard.Module):
         comment=self.getSymbolicPos("$pc")
         return [self.formatReg(name,value,changed)+' '+comment]
 
+    def linesEFL(self,termWidth,styleChanged):
+        name="EFL"
+        value=run(r'printf "%08x", $eflags')
+        efl=int(value,16);
+        CFbit=1
+        PFbit=4
+        AFbit=0x10
+        ZFbit=0x40
+        SFbit=0x80
+        TFbit=0x100
+        DFbit=0x400
+        OFbit=0x800
+        CF = int((efl&CFbit)!=0)
+        PF = int((efl&PFbit)!=0)
+        AF = int((efl&AFbit)!=0)
+        ZF = int((efl&ZFbit)!=0)
+        SF = int((efl&SFbit)!=0)
+        TF = int((efl&TFbit)!=0)
+        DF = int((efl&DFbit)!=0)
+        OF = int((efl&OFbit)!=0)
+        result=[]
+        result.append(self.formatAndUpdateFlag("CF",CF))
+        result.append(self.formatAndUpdateFlag("PF",PF))
+        result.append(self.formatAndUpdateFlag("AF",AF))
+        result.append(self.formatAndUpdateFlag("ZF",ZF))
+        result.append(self.formatAndUpdateFlag("SF",SF))
+        result.append(self.formatAndUpdateFlag("TF",TF))
+        result.append(self.formatAndUpdateFlag("DF",DF))
+        result.append(self.formatAndUpdateFlag("OF",OF))
+        result.append('')
+        changed=self.table and self.table.get(name,'')!=value
+        self.table[name]=value
+        eflStr=self.formatReg(name,value,changed)
+        eflStr += " ("
+        eflStr += "O,"  if OF           else "NO,"
+        eflStr += "B,"  if CF           else "AE,"
+        eflStr += "E,"  if ZF           else "NE,"
+        eflStr += "BE," if ZF or CF     else "A,"
+        eflStr += "S,"  if SF           else "NS,"
+        eflStr += "P,"  if PF           else "NP,"
+        eflStr += "L,"  if SF!=OF       else "GE,"
+        eflStr += "LE"  if SF!=OF or ZF else "G"
+        eflStr += ")"
+        result.append(eflStr)
+        return result
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -63,6 +115,8 @@ class x86gpr(Dashboard.Module):
         else:
             self.bits=32
         try:
-            return self.linesGPR(termWidth,styleChanged)+['']+self.linesPC(termWidth,styleChanged)
+            return (self.linesGPR(termWidth,styleChanged)+['']+
+                   self.linesPC(termWidth,styleChanged)+['']+
+                   self.linesEFL(termWidth,styleChanged))
         except Exception,e:
             return [str(e)]
