@@ -16,7 +16,7 @@ class x86gpr(Dashboard.Module):
         if not addrWithSymPos.startswith("=> ") or not addrWithSymPos.endswith(":"):
             raise Exception("bad symbolic pos: \""+addrWithSymPos+"\"")
         else:
-            return re.sub("=> [^ ]+ (.*):","\\1",addrWithSymPos)
+            return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
 
     def linesGPR(self,termWidth,styleChanged):
         if self.bits==32:
