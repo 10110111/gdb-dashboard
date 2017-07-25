@@ -57,7 +57,11 @@ class x86gpr(Dashboard.Module):
         return [self.formatReg(name,value,changed)+' '+comment]
 
     def lines(self,termWidth,styleChanged):
-        self.bits=32
+        arch=run("show arch")
+        if " i386:x64-32" in arch or " i386:x86-64" in arch:
+            self.bits=64
+        else:
+            self.bits=32
         try:
             return self.linesGPR(termWidth,styleChanged)+['']+self.linesPC(termWidth,styleChanged)
         except Exception,e:
