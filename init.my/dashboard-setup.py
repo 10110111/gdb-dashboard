@@ -18,6 +18,10 @@ class x86gpr(Dashboard.Module):
         else:
             return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
 
+    def formatAndUpdateReg(self,name,value):
+        changed=self.table and self.table.get(name,'')!=value
+        self.table[name]=value
+        return self.formatReg(name,value,changed)
     def formatAndUpdateFlag(self,name,value):
         key='flag'+name
         changed=self.table and self.table.get(key,'')!=value
@@ -45,9 +49,7 @@ class x86gpr(Dashboard.Module):
         registers=[]
         for name in regNames:
             value=regs[name]
-            changed=self.table and self.table.get(name,'')!=value
-            self.table[name]=value
-            registers.append(self.formatReg(name,value,changed))
+            registers.append(self.formatAndUpdateReg(name,value))
         return registers
 
     def linesPC(self,termWidth,styleChanged):
@@ -57,10 +59,8 @@ class x86gpr(Dashboard.Module):
         else:
             name="RIP"
             value=run(r'printf "%016lx", $pc')
-        changed=self.table and self.table.get(name,'')!=value
-        self.table[name]=value
         comment=self.getSymbolicPos("$pc")
-        return [self.formatReg(name,value,changed)+' '+comment]
+        return [self.formatAndUpdateReg(name,value)+' '+comment]
 
     def linesEFL(self,termWidth,styleChanged):
         name="EFL"
@@ -92,9 +92,7 @@ class x86gpr(Dashboard.Module):
         result.append(self.formatAndUpdateFlag("DF",DF))
         result.append(self.formatAndUpdateFlag("OF",OF))
         result.append('')
-        changed=self.table and self.table.get(name,'')!=value
-        self.table[name]=value
-        eflStr=self.formatReg(name,value,changed)
+        eflStr=self.formatAndUpdateReg(name,value)
         eflStr += " ("
         eflStr += "O,"  if OF           else "NO,"
         eflStr += "B,"  if CF           else "AE,"
