@@ -10,6 +10,13 @@ class x86gpr(Dashboard.Module):
     @staticmethod
     def formatReg(name,value,changed):
         return ansi(name,R.style_low)+' '+ansi(value,R.style_selected_1 if changed else '')
+    @staticmethod
+    def getSymbolicPos(addrStr):
+        addrWithSymPos=run("x/i $pc").split('\t')[0]
+        if not addrWithSymPos.startswith("=> ") or not addrWithSymPos.endswith(":"):
+            raise Exception("bad symbolic pos: \""+addrWithSymPos+"\"")
+        else:
+            return re.sub("=> [^ ]+ (.*):","\\1",addrWithSymPos)
 
     def linesGPR(self,termWidth,styleChanged):
         if self.bits==32:
@@ -46,7 +53,8 @@ class x86gpr(Dashboard.Module):
             value=run(r'printf "%016lx", $pc')
         changed=self.table and self.table.get(name,'')!=value
         self.table[name]=value
-        return [self.formatReg(name,value,changed)]
+        comment=self.getSymbolicPos("$pc")
+        return [self.formatReg(name,value,changed)+' '+comment]
 
     def lines(self,termWidth,styleChanged):
         self.bits=32
