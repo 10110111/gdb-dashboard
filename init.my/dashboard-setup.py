@@ -8,8 +8,11 @@ class x86regs(Dashboard.Module):
         return 'GPRs'
 
     @staticmethod
+    def formatRegValue(value,changed):
+        return ansi(value,R.style_selected_1 if changed else '')
+    @staticmethod
     def formatReg(name,value,changed):
-        return ansi(name,R.style_low)+' '+ansi(value,R.style_selected_1 if changed else '')
+        return ansi(name,R.style_low)+' '+x86regs.formatRegValue(value,changed)
     @staticmethod
     def getSymbolicPos(addrStr):
         addrWithSymPos=run("x/i $pc").split('\t')[0]
@@ -17,14 +20,23 @@ class x86regs(Dashboard.Module):
             raise Exception("bad symbolic pos: \""+addrWithSymPos+"\"")
         else:
             return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
+    @staticmethod
+    def x87RoundingModeString(mode):
+        return { 0: "NEAR",
+                 1: "DOWN",
+                 2: "  UP",
+                 3: "ZERO" }[mode]
 
     def checkAndUpdateChanged(self,key,value):
         changed=self.table and self.table.get(key,'')!=value
         self.table[key]=value
         return changed
-    def formatAndUpdateReg(self,name,value):
-        changed=self.checkAndUpdateChanged(name,value)
+    def formatAndUpdateReg(self,name,value,prefix=''):
+        changed=self.checkAndUpdateChanged(prefix+name,value)
         return self.formatReg(name,value,changed)
+    def formatAndUpdateRegValue(self,name,value):
+        changed=self.checkAndUpdateChanged(name,value)
+        return x86regs.formatRegValue(value,changed)
     def formatAndUpdateFlag(self,name,value):
         changed=self.checkAndUpdateChanged('flag'+name,value)
         return self.formatReg(name[0],value,changed)
@@ -120,6 +132,43 @@ class x86regs(Dashboard.Module):
             registers.append(self.formatAndUpdateReg(name,value))
         return registers
 
+    def linesMXCSR(self,termWidth,styleChanged):
+#                                 P U O Z D I
+# MXCSR 00001f80  FZ 0 DZ 0  Err  0 0 0 0 0 0
+#                 Rnd NEAR   Mask 1 1 1 1 1 1
+        name="MXCSR"
+        value=run('printf "%08x", $mxcsr')
+        try: mxcsr=int(value,16)
+        except: return [] # MXCSR may be unavailable if SSE isn't supported
+        mxcsrLines=[]
+        mxcsrLines.append("                                P U O Z D I")
+
+        mainLine=(self.formatAndUpdateReg(name,value)+
+                  "  "+self.formatAndUpdateReg("FZ",int((mxcsr&0x8000)!=0))+
+                  " "+self.formatAndUpdateReg("DZ",int((mxcsr&0x40)!=0))+
+                  "  Err  "+
+                  self.formatAndUpdateRegValue("mxcsr-PE",int((mxcsr&0x20)!=0))+" "+
+                  self.formatAndUpdateRegValue("mxcsr-UE",int((mxcsr&0x10)!=0))+" "+
+                  self.formatAndUpdateRegValue("mxcsr-OE",int((mxcsr&0x08)!=0))+" "+
+                  self.formatAndUpdateRegValue("mxcsr-ZE",int((mxcsr&0x04)!=0))+" "+
+                  self.formatAndUpdateRegValue("mxcsr-DE",int((mxcsr&0x02)!=0))+" "+
+                  self.formatAndUpdateRegValue("mxcsr-IE",int((mxcsr&0x01)!=0))
+                 )
+        secondLine=("                "+
+                    self.formatAndUpdateReg("Rnd",self.x87RoundingModeString((mxcsr>>13)&3),"SSE-")+
+                    "   Mask "+
+                    self.formatAndUpdateRegValue("mxcsr-PM",int((mxcsr&0x1000)!=0))+" "+
+                    self.formatAndUpdateRegValue("mxcsr-UM",int((mxcsr&0x0800)!=0))+" "+
+                    self.formatAndUpdateRegValue("mxcsr-OM",int((mxcsr&0x0400)!=0))+" "+
+                    self.formatAndUpdateRegValue("mxcsr-ZM",int((mxcsr&0x0200)!=0))+" "+
+                    self.formatAndUpdateRegValue("mxcsr-DM",int((mxcsr&0x0100)!=0))+" "+
+                    self.formatAndUpdateRegValue("mxcsr-IM",int((mxcsr&0x0080)!=0))
+                 )
+
+        mxcsrLines.append(mainLine)
+        mxcsrLines.append(secondLine)
+        return mxcsrLines
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -138,6 +187,7 @@ class x86regs(Dashboard.Module):
                     theLines.append(efl[i]+'  '+seg[i])
                 else:
                     theLines.append(efl[i])
+            theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
             return [str(e)]
