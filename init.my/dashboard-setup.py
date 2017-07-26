@@ -34,7 +34,7 @@ class x86gpr(Dashboard.Module):
             regValues=run('printf "%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x",'+
                           '$eax,$ecx,$edx,$ebx,$esp,$ebp,$esi,$edi').split(',')
             if len(regValues)!=8:
-                raise Exception("Registers unavailable")
+                raise Exception("32-bit general-purpose registers unavailable")
         else:
             regNames=["RAX","RCX","RDX","RBX","RSP","RBP","RSI","RDI",
                       "R8 ","R9 ","R10","R11","R12","R13","R14","R15"]
@@ -43,7 +43,7 @@ class x86gpr(Dashboard.Module):
                           '$rax,$rcx,$rdx,$rbx,$rsp,$rbp,$rsi,$rdi,'+
                           '$r8,$r9,$r10,$r11,$r12,$r13,$r14,$r15').split(',')
             if len(regValues)!=16:
-                raise Exception("Registers unavailable")
+                raise Exception("64-bit general-purpose registers unavailable")
 
         regs=dict(zip(regNames,regValues))
         registers=[]
