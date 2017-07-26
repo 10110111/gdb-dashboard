@@ -126,9 +126,17 @@ class x86gpr(Dashboard.Module):
         else:
             self.bits=32
         try:
-            return (self.linesGPR(termWidth,styleChanged)+['']+
-                   self.linesPC(termWidth,styleChanged)+['']+
-                   self.linesEFL(termWidth,styleChanged)+['']+
-                   self.linesSegReg(termWidth,styleChanged))
+            theLines=(self.linesGPR(termWidth,styleChanged)+['']+
+                      self.linesPC(termWidth,styleChanged)+[''])
+            efl=self.linesEFL(termWidth,styleChanged)
+            seg=self.linesSegReg(termWidth,styleChanged)
+            if len(efl)<len(seg):
+                raise Exception("BUG: EFL has fewer lines than segReg")
+            for i in range(len(efl)):
+                if i<len(seg):
+                    theLines.append(efl[i]+'  '+seg[i])
+                else:
+                    theLines.append(efl[i])
+            return theLines
         except Exception,e:
             return [str(e)]
