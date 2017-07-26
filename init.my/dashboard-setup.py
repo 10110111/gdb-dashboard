@@ -1,4 +1,4 @@
-class x86gpr(Dashboard.Module):
+class x86regs(Dashboard.Module):
     "x86 general-purpose registers view"
 
     def __init__(self):
