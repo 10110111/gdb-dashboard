@@ -106,6 +106,19 @@ class x86gpr(Dashboard.Module):
         result.append(eflStr)
         return result
 
+    def linesSegReg(self,termWidth,styleChanged):
+        regNames=["ES","CS","SS","DS","FS","GS"]
+        regValues=run('printf "%04x,%04x,%04x,%04x,%04x,%04x",'+
+                      '$es,$cs,$ss,$ds,$fs,$gs').split(',')
+        if len(regValues)!=6:
+            raise Exception("Segment registers unavailable")
+        regs=dict(zip(regNames,regValues))
+        registers=[]
+        for name in regNames:
+            value=regs[name]
+            registers.append(self.formatAndUpdateReg(name,value))
+        return registers
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -115,6 +128,7 @@ class x86gpr(Dashboard.Module):
         try:
             return (self.linesGPR(termWidth,styleChanged)+['']+
                    self.linesPC(termWidth,styleChanged)+['']+
-                   self.linesEFL(termWidth,styleChanged))
+                   self.linesEFL(termWidth,styleChanged)+['']+
+                   self.linesSegReg(termWidth,styleChanged))
         except Exception,e:
             return [str(e)]
