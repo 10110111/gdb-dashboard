@@ -18,14 +18,15 @@ class x86regs(Dashboard.Module):
         else:
             return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
 
-    def formatAndUpdateReg(self,name,value):
-        changed=self.table and self.table.get(name,'')!=value
-        self.table[name]=value
-        return self.formatReg(name,value,changed)
-    def formatAndUpdateFlag(self,name,value):
-        key='flag'+name
+    def checkAndUpdateChanged(self,key,value):
         changed=self.table and self.table.get(key,'')!=value
         self.table[key]=value
+        return changed
+    def formatAndUpdateReg(self,name,value):
+        changed=self.checkAndUpdateChanged(name,value)
+        return self.formatReg(name,value,changed)
+    def formatAndUpdateFlag(self,name,value):
+        changed=self.checkAndUpdateChanged('flag'+name,value)
         return self.formatReg(name[0],value,changed)
 
     def linesGPR(self,termWidth,styleChanged):
