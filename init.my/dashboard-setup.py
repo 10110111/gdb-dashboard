@@ -219,6 +219,28 @@ class x86regs(Dashboard.Module):
         lines.append(fcrLine)
         return lines
 
+    def linesLastFPUOp(self,termWidth,styleChanged):
+        offsetFormat = "%016lx" if self.bits==64 else "%08x"
+        regs=run('printf "%04x,%04x,%04x,'+offsetFormat+','+offsetFormat+'",$fop,$fiseg,$foseg,$fioff,$fooff').split(',')
+        if len(regs)!=5:
+            raise Exception("Failed to get FPU last operation info")
+        fop=regs[0]
+        fiseg=regs[1]
+        foseg=regs[2]
+        fioff=regs[3]
+        fooff=regs[4]
+        lines=[]
+        lines.append(self.formatAndUpdateReg("Last insn",fiseg,"seg-")+":"+
+                     self.formatAndUpdateRegValue("off-Last insn",fioff))
+        lines.append(self.formatAndUpdateReg("Last data",foseg,"seg-")+":"+
+                     self.formatAndUpdateRegValue("off-Last data",fooff))
+        fop=int(fop,16)
+        fop1=(fop>>8)|0xd8
+        fop2=fop&0xff
+        fopStr = "%02x %02x" % (fop1,fop2) if fop!=0 else "00 00"
+        lines.append(self.formatAndUpdateReg("Last opcode",fopStr,"fpu-"))
+        return lines
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -239,6 +261,7 @@ class x86regs(Dashboard.Module):
                     theLines.append(efl[i])
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
+            theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
             return theLines
         except Exception,e:
             return [str(e)]
