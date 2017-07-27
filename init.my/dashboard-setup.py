@@ -70,8 +70,9 @@ class x86regs(Dashboard.Module):
         return comment.rstrip()
 
     def checkAndUpdateChanged(self,key,value):
-        changed=self.table and self.table.get(key,'')!=value
+        savedValue=self.table.get(key,None)
         self.table[key]=value
+        changed=self.table and savedValue!=None and savedValue!=value
         return changed
     def formatAndUpdateReg(self,name,value,prefix=''):
         changed=self.checkAndUpdateChanged(prefix+name,value)
