@@ -259,9 +259,9 @@ class x86regs(Dashboard.Module):
                     theLines.append(efl[i]+'  '+seg[i])
                 else:
                     theLines.append(efl[i])
-            theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
+            theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
             return [str(e)]
