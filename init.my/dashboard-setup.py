@@ -31,6 +31,44 @@ class x86regs(Dashboard.Module):
     def x87PrecisionString(mode):
         return {0:"24",1:"??",2:"53",3:"64"}[mode]
 
+    @staticmethod
+    def fpuStackFaultDetail(statusWord):
+        invalidOperationException=statusWord & 0x01
+        C1=statusWord&(1<<9)
+        stackFault=statusWord&0x40
+        if invalidOperationException and stackFault:
+            return "Stack overflow" if C1 else "Stack underflow"
+        return ""
+    @staticmethod
+    def fpuComparExplain(statusWord):
+        C0=int((statusWord&(1<<8))!=0)
+        C2=int((statusWord&(1<<10))!=0)
+        C3=int((statusWord&(1<<14))!=0)
+        if C3==0 and C2==0 and C0==0: return "GT"
+        if C3==0 and C2==0 and C0==1: return "LT"
+        if C3==1 and C2==0 and C0==0: return "EQ"
+        if C3==1 and C2==1 and C0==1: return "Unordered"
+        return ""
+    @staticmethod
+    def fpuExplainPE(statusWord):
+        if statusWord&(1<<5):
+            C1=statusWord&(1<<9)
+            return "Rounded UP" if C1 else "Rounded DOWN"
+        return ""
+    @classmethod
+    def fsrComment(self,statusWord):
+        stackFaultDetail=self.fpuStackFaultDetail(statusWord)
+        comparisonResult=self.fpuComparExplain(statusWord)
+        comparComment="" if not comparisonResult else '('+comparisonResult+')'
+        peExplanation=self.fpuExplainPE(statusWord)
+
+        comment=comparComment
+        if len(comment) and len(stackFaultDetail): comment+=", "
+        comment+=stackFaultDetail
+        if len(comment) and len(peExplanation): comment+=", "
+        comment+=peExplanation
+        return comment.rstrip()
+
     def checkAndUpdateChanged(self,key,value):
         changed=self.table and self.table.get(key,'')!=value
         self.table[key]=value
@@ -199,7 +237,7 @@ class x86regs(Dashboard.Module):
                   self.formatAndUpdateRegValue("fpu-DE",int((fsr&0x0002)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-IE",int((fsr&0x0001)!=0))
                  )
-        lines.append(fsrLine) # TODO: cond
+        lines.append(fsrLine+' '+self.fsrComment(fsr))
 
         fcrLine=self.formatAndUpdateReg("FCR",fcr)
         fcr=int(fcr,16)
