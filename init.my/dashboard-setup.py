@@ -20,12 +20,16 @@ class x86regs(Dashboard.Module):
             raise Exception("bad symbolic pos: \""+addrWithSymPos+"\"")
         else:
             return re.sub("=> [^ ]+ ?(.*):","\\1",addrWithSymPos)
+
     @staticmethod
     def x87RoundingModeString(mode):
         return { 0: "NEAR",
                  1: "DOWN",
                  2: "  UP",
                  3: "ZERO" }[mode]
+    @staticmethod
+    def x87PrecisionString(mode):
+        return {0:"24",1:"??",2:"53",3:"64"}[mode]
 
     def checkAndUpdateChanged(self,key,value):
         changed=self.table and self.table.get(key,'')!=value
@@ -169,6 +173,52 @@ class x86regs(Dashboard.Module):
         mxcsrLines.append(secondLine)
         return mxcsrLines
 
+    def linesFPUStatusAndControl(self,termWidth,styleChanged):
+        regs=run('printf "%04x,%04x,%04x",$ftag,$fstat,$fctrl').split(',')
+        if(len(regs)!=3):
+            raise Exception("FTR, FSR or FCR unavailable")
+        ftr=regs[0]
+        fsr=regs[1]
+        fcr=regs[2]
+        lines=[]
+        lines.append(self.formatAndUpdateReg("FTR",ftr)+
+                     "       3 2 1 0      E S P U O Z D I")
+        fsrLine=self.formatAndUpdateReg("FSR",fsr);
+        fsr=int(fsr,16)
+        fsrLine+=("  Cond "+
+                  self.formatAndUpdateRegValue("fpu-C3",int((fsr&0x4000)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-C2",int((fsr&0x0400)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-C1",int((fsr&0x0200)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-C0",int((fsr&0x0100)!=0))+"  Err "+
+                  self.formatAndUpdateRegValue("fpu-ES",int((fsr&0x0080)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-SF",int((fsr&0x0040)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-PE",int((fsr&0x0020)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-UE",int((fsr&0x0010)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-OE",int((fsr&0x0008)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-ZE",int((fsr&0x0004)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-DE",int((fsr&0x0002)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-IE",int((fsr&0x0001)!=0))
+                 )
+        lines.append(fsrLine) # TODO: cond
+
+        fcrLine=self.formatAndUpdateReg("FCR",fcr)
+        fcr=int(fcr,16)
+        fcrLine+=("  "+
+                  self.formatAndUpdateReg("Prec",self.x87RoundingModeString((fcr>>10)&3),"fpu-")+
+                  ','+
+                  self.formatAndUpdateRegValue("fpu-RC",self.x87PrecisionString((fcr>>8)&3))
+                  )
+        fcrLine+=("  Mask    "+
+                  self.formatAndUpdateRegValue("fpu-PM",int((fcr&0x0020)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-UM",int((fcr&0x0010)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-OM",int((fcr&0x0008)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-ZM",int((fcr&0x0004)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-DM",int((fcr&0x0002)!=0))+' '+
+                  self.formatAndUpdateRegValue("fpu-IM",int((fcr&0x0001)!=0))
+                 )
+        lines.append(fcrLine)
+        return lines
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -188,6 +238,7 @@ class x86regs(Dashboard.Module):
                 else:
                     theLines.append(efl[i])
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
+            theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             return theLines
         except Exception,e:
             return [str(e)]
