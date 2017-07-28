@@ -68,6 +68,55 @@ class x86regs(Dashboard.Module):
         if len(comment) and len(peExplanation): comment+=", "
         comment+=peExplanation
         return comment.rstrip()
+    @staticmethod
+    def fpuTagString(tag):
+        return { 0: "valid  ",
+                 1: "zero   ",
+                 2: "special",
+                 3: "empty  " }[tag]
+
+    @staticmethod
+    def getFloatTypePrefix(exponent,mantissa):
+        mantissaLength=64
+        expLength=80-mantissaLength-1
+        integerBitOnly=1<<(mantissaLength-1)
+        QNaN_mask=3<<(mantissaLength-2)
+        expMax=(1<<expLength)-1
+	integerBitSet=bool(mantissa & integerBitOnly)
+
+        if exponent==expMax:
+            if mantissa==integerBitOnly:
+                return "INF"   # |S|11..11|1.000..0|
+            elif((mantissa & QNaN_mask) == QNaN_mask):
+                return "QNaN"  # |S|11..11|1.1XX..X|
+            elif (mantissa & QNaN_mask) == integerBitOnly:
+                return "SNaN"  # |S|11..11|1.0XX..X|
+            else:
+                return "BAD" # Unsupported; // all exp bits set, but integer bit reset - pseudo-NaN/Inf
+        elif exponent==0:
+            if mantissa==0:
+                return "Zero" # |S|00..00|00..00|
+            else:
+                if not integerBitSet:
+                    return "Denormal"  # |S|00..00|0.XXXX..X|
+                else:
+                    return "BAD" # PseudoDenormal # |S|00..00|1.XXXX..X|
+        else:
+            if integerBitSet:
+                return "Normal"
+            else:
+                return "BAD" # Unsupported; // integer bit reset but exp is as if normal - unnormal
+
+    @classmethod
+    def formatBadFloat80(self,raw):
+        # TODO: print types of badness next to value
+        # TODO: print pseudo-denormals as numbers (see EDB)
+        sign=bool(int(raw[0],16)&8)
+        exponent=int(raw[0:4],16)&0x7fff
+        mantissa=int(raw[4:20],16)
+        type=self.getFloatTypePrefix(exponent,mantissa)
+        signStr='-' if sign else '+'
+        return signStr+type+' '+re.sub("(.{4})(.{8})(.{8})","\\1 \\2 \\3",raw)
 
     def checkAndUpdateChanged(self,key,value):
         savedValue=self.table.get(key,None)
@@ -83,6 +132,9 @@ class x86regs(Dashboard.Module):
     def formatAndUpdateFlag(self,name,value):
         changed=self.checkAndUpdateChanged('flag'+name,value)
         return self.formatReg(name[0],value,changed)
+    def formatAndUpdateFPUTag(self,index,value):
+        changed=self.checkAndUpdateChanged('fpu-tag-%x' % index,value)
+        return self.formatRegValue(self.fpuTagString(value),changed)
 
     def linesGPR(self,termWidth,styleChanged):
         if self.bits==32:
@@ -280,6 +332,39 @@ class x86regs(Dashboard.Module):
         lines.append(self.formatAndUpdateReg("Last opcode",fopStr,"fpu-"))
         return lines
 
+    def linesFPUDataRegs(self,termWidth,styleChanged):
+        ftags=int(run('printf "%04x",$ftag'),16)
+        fsr=int(run('printf "%04x",$fstat'),16)
+        top=(fsr>>11)&7
+
+        regsST=[]
+        for i in range(8):
+            try:
+                regStr=run('printf "%.21Lg",$st{:x}'.format(i))
+                if regStr=="0":
+                    regStr="0.0"
+                elif regStr=="-0":
+                    regStr="-0.0"
+                elif regStr=="nan" or regStr=="-nan":
+                    raise Exception("NaN")
+                elif regStr=="inf":
+                    regStr="+INF"
+                elif regStr=="-inf":
+                    regStr="-INF"
+                regsST.append(regStr)
+            except Exception:
+                regStr=run('info reg st%x' % i)
+                rawStr=re.sub(".*\(raw 0x([^)]+)\).*","\\1",regStr).rstrip()
+                regsST.append(self.formatBadFloat80(rawStr))
+        lines=[]
+        for i in range(8):
+            stNum=(i-top)&7
+            name="ST%x" % stNum
+            tagString=self.formatAndUpdateFPUTag(i,(ftags>>(2*i))&3)
+            value=self.formatAndUpdateRegValue("fpu-R%x" % i,regsST[stNum]) # TODO: grey out if empty
+            lines.append(name+' '+tagString+' '+value)
+        return lines
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -298,6 +383,7 @@ class x86regs(Dashboard.Module):
                     theLines.append(efl[i]+'  '+seg[i])
                 else:
                     theLines.append(efl[i])
+            theLines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
             theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
