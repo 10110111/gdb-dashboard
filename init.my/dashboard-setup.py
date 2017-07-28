@@ -8,11 +8,14 @@ class x86regs(Dashboard.Module):
         return 'GPRs'
 
     @staticmethod
+    def formatRegName(name):
+        return ansi(name,R.style_low)
+    @staticmethod
     def formatRegValue(value,changed):
         return ansi(value,R.style_selected_1 if changed else '')
-    @staticmethod
-    def formatReg(name,value,changed):
-        return ansi(name,R.style_low)+' '+x86regs.formatRegValue(value,changed)
+    @classmethod
+    def formatReg(self,name,value,changed):
+        return self.formatRegName(name)+' '+x86regs.formatRegValue(value,changed)
     @staticmethod
     def getSymbolicPos(addrStr):
         addrWithSymPos=run("x/i $pc").split('\t')[0]
