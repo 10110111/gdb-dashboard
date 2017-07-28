@@ -118,6 +118,20 @@ class x86regs(Dashboard.Module):
         signStr='-' if sign else '+'
         return signStr+type+' '+re.sub("(.{4})(.{8})(.{8})","\\1 \\2 \\3",raw)
 
+    @staticmethod
+    def formatGrayedOutLinuxVT(value):
+        # Bold black is good enough as gray in Linux VT
+        return "\x1b[1;30m"+value+"\x1b[m"
+    @staticmethod
+    def formatGrayedOutANSI(value):
+        return "\x1b[38;5;7m"+value+"\x1b[0m"
+    @classmethod
+    def formatGrayedOut(self,value):
+        if os.environ["TERM"]=="linux":
+            return self.formatGrayedOutLinuxVT(value)
+        else:
+            return self.formatGrayedOutANSI(value)
+
     def checkAndUpdateChanged(self,key,value):
         savedValue=self.table.get(key,None)
         self.table[key]=value
@@ -360,8 +374,14 @@ class x86regs(Dashboard.Module):
         for i in range(8):
             stNum=(i-top)&7
             name="ST%x" % stNum
-            tagString=self.formatAndUpdateFPUTag(i,(ftags>>(2*i))&3)
-            value=self.formatAndUpdateRegValue("fpu-R%x" % i,regsST[stNum]) # TODO: grey out if empty
+            tag=(ftags>>(2*i))&3
+            tagString=self.formatAndUpdateFPUTag(i,tag)
+            regValue=regsST[stNum]
+            regChanged=self.checkAndUpdateChanged("fpu-R%x" % i,regValue)
+            if tag!=3 or regChanged:
+                value=self.formatRegValue(regValue,regChanged)
+            else:
+                value=self.formatGrayedOut(regValue)
             lines.append(name+' '+tagString+' '+value)
         return lines
 
