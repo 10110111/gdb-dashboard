@@ -79,7 +79,7 @@ class x86regs(Dashboard.Module):
                  3: "empty  " }[tag]
 
     @staticmethod
-    def getFloatTypePrefix(exponent,mantissa):
+    def getFloatType(exponent,mantissa):
         mantissaLength=64
         expLength=80-mantissaLength-1
         integerBitOnly=1<<(mantissaLength-1)
@@ -89,37 +89,39 @@ class x86regs(Dashboard.Module):
 
         if exponent==expMax:
             if mantissa==integerBitOnly:
-                return "INF"   # |S|11..11|1.000..0|
+                return ("INF","infinity")   # |S|11..11|1.000..0|
             elif((mantissa & QNaN_mask) == QNaN_mask):
-                return "QNaN"  # |S|11..11|1.1XX..X|
+                return ("QNaN","quiet NaN")  # |S|11..11|1.1XX..X|
             elif (mantissa & QNaN_mask) == integerBitOnly:
-                return "SNaN"  # |S|11..11|1.0XX..X|
+                return ("SNaN","signaling NaN")  # |S|11..11|1.0XX..X|
             else:
-                return "BAD" # Unsupported; // all exp bits set, but integer bit reset - pseudo-NaN/Inf
+                return ("BAD", "unsupported") # all exp bits set, but integer bit reset - pseudo-NaN/Inf
         elif exponent==0:
             if mantissa==0:
-                return "Zero" # |S|00..00|00..00|
+                return ("Zero","zero") # |S|00..00|00..00|
             else:
                 if not integerBitSet:
-                    return "Denormal"  # |S|00..00|0.XXXX..X|
+                    return ("Denormal","denormal")  # |S|00..00|0.XXXX..X|
                 else:
-                    return "BAD" # PseudoDenormal # |S|00..00|1.XXXX..X|
+                    return ("BAD","pseudo-denormal") # |S|00..00|1.XXXX..X|
         else:
             if integerBitSet:
-                return "Normal"
+                return ("Normal","normal")
             else:
-                return "BAD" # Unsupported; // integer bit reset but exp is as if normal - unnormal
+                return ("BAD","unsupported"); # integer bit reset but exp is as if normal - unnormal
 
     @classmethod
     def formatBadFloat80(self,raw):
-        # TODO: print types of badness next to value
         # TODO: print pseudo-denormals as numbers (see EDB)
         sign=bool(int(raw[0],16)&8)
         exponent=int(raw[0:4],16)&0x7fff
         mantissa=int(raw[4:20],16)
-        type=self.getFloatTypePrefix(exponent,mantissa)
+        type=self.getFloatType(exponent,mantissa)
         signStr='-' if sign else '+'
-        return signStr+type+' '+re.sub("(.{4})(.{8})(.{8})","\\1 \\2 \\3",raw)
+        result=signStr+type[0]+' '+re.sub("(.{4})(.{8})(.{8})","\\1 \\2 \\3",raw)
+        if type[0]=="BAD":
+            result+="  "+type[1]
+        return result
 
     @staticmethod
     def formatGrayedOutLinuxVT(value):
