@@ -376,7 +376,7 @@ class x86regs(Dashboard.Module):
         lines=[]
         for i in range(8):
             stNum=(i-top)&7
-            name="ST%x" % stNum
+            name=self.formatRegName("ST%x" % stNum)
             tag=(ftags>>(2*i))&3
             tagString=self.formatAndUpdateFPUTag(i,tag)
             regValue=regsST[stNum]
