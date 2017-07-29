@@ -193,7 +193,7 @@ class x86regs(Dashboard.Module):
             name="RIP"
             value=run(r'printf "%016lx", $pc')
         comment=self.getSymbolicPos("$pc")
-        return [self.formatAndUpdateReg(name,value)+' '+comment]
+        return [self.formatAndUpdateReg(name,value)+' '+self.formatGrayedOut(comment)]
 
     def linesEFL(self,termWidth,styleChanged):
         name="EFL"
@@ -225,18 +225,18 @@ class x86regs(Dashboard.Module):
         result.append(self.formatAndUpdateFlag("DF",DF))
         result.append(self.formatAndUpdateFlag("OF",OF))
         result.append('')
-        eflStr=self.formatAndUpdateReg(name,value)
-        eflStr += " ("
-        eflStr += "O,"  if OF           else "NO,"
-        eflStr += "B,"  if CF           else "AE,"
-        eflStr += "E,"  if ZF           else "NE,"
-        eflStr += "BE," if ZF or CF     else "A,"
-        eflStr += "S,"  if SF           else "NS,"
-        eflStr += "P,"  if PF           else "NP,"
-        eflStr += "L,"  if SF!=OF       else "GE,"
-        eflStr += "LE"  if SF!=OF or ZF else "G"
-        eflStr += ")"
-        result.append(eflStr)
+        efl=self.formatAndUpdateReg(name,value)
+        comment  = " ("
+        comment += "O,"  if OF           else "NO,"
+        comment += "B,"  if CF           else "AE,"
+        comment += "E,"  if ZF           else "NE,"
+        comment += "BE," if ZF or CF     else "A,"
+        comment += "S,"  if SF           else "NS,"
+        comment += "P,"  if PF           else "NP,"
+        comment += "L,"  if SF!=OF       else "GE,"
+        comment += "LE"  if SF!=OF or ZF else "G"
+        comment += ")"
+        result.append(efl+self.formatGrayedOut(comment))
         return result
 
     def linesSegReg(self,termWidth,styleChanged):
@@ -261,12 +261,13 @@ class x86regs(Dashboard.Module):
         try: mxcsr=int(value,16)
         except: return [] # MXCSR may be unavailable if SSE isn't supported
         mxcsrLines=[]
-        mxcsrLines.append("                                P U O Z D I")
+        mxcsrLines.append("                                "+
+                          self.formatRegName("P U O Z D I"))
 
         mainLine=(self.formatAndUpdateReg(name,value)+
                   "  "+self.formatAndUpdateReg("FZ",int((mxcsr&0x8000)!=0))+
                   " "+self.formatAndUpdateReg("DZ",int((mxcsr&0x40)!=0))+
-                  "  Err  "+
+                  "  "+self.formatRegName("Err")+"  "+
                   self.formatAndUpdateRegValue("mxcsr-PE",int((mxcsr&0x20)!=0))+" "+
                   self.formatAndUpdateRegValue("mxcsr-UE",int((mxcsr&0x10)!=0))+" "+
                   self.formatAndUpdateRegValue("mxcsr-OE",int((mxcsr&0x08)!=0))+" "+
@@ -276,7 +277,7 @@ class x86regs(Dashboard.Module):
                  )
         secondLine=("                "+
                     self.formatAndUpdateReg("Rnd",self.x87RoundingModeString((mxcsr>>13)&3),"SSE-")+
-                    "   Mask "+
+                    "   "+self.formatRegName("Mask")+" "+
                     self.formatAndUpdateRegValue("mxcsr-PM",int((mxcsr&0x1000)!=0))+" "+
                     self.formatAndUpdateRegValue("mxcsr-UM",int((mxcsr&0x0800)!=0))+" "+
                     self.formatAndUpdateRegValue("mxcsr-OM",int((mxcsr&0x0400)!=0))+" "+
@@ -298,14 +299,17 @@ class x86regs(Dashboard.Module):
         fcr=regs[2]
         lines=[]
         lines.append(self.formatAndUpdateReg("FTR",ftr)+
-                     "       3 2 1 0      E S P U O Z D I")
+                     "       "+
+                     self.formatRegName("3 2 1 0")+"      "+
+                     self.formatRegName("E S P U O Z D I"))
         fsrLine=self.formatAndUpdateReg("FSR",fsr);
         fsr=int(fsr,16)
-        fsrLine+=("  Cond "+
+        fsrLine+=("  "+self.formatRegName("Cond")+" "+
                   self.formatAndUpdateRegValue("fpu-C3",int((fsr&0x4000)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-C2",int((fsr&0x0400)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-C1",int((fsr&0x0200)!=0))+' '+
-                  self.formatAndUpdateRegValue("fpu-C0",int((fsr&0x0100)!=0))+"  Err "+
+                  self.formatAndUpdateRegValue("fpu-C0",int((fsr&0x0100)!=0))+"  "+
+                  self.formatRegName("Err")+" "+
                   self.formatAndUpdateRegValue("fpu-ES",int((fsr&0x0080)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-SF",int((fsr&0x0040)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-PE",int((fsr&0x0020)!=0))+' '+
@@ -324,7 +328,7 @@ class x86regs(Dashboard.Module):
                   ','+
                   self.formatAndUpdateRegValue("fpu-RC",self.x87PrecisionString((fcr>>8)&3))
                   )
-        fcrLine+=("  Mask    "+
+        fcrLine+=("  "+self.formatRegName("Mask")+"    "+
                   self.formatAndUpdateRegValue("fpu-PM",int((fcr&0x0020)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-UM",int((fcr&0x0010)!=0))+' '+
                   self.formatAndUpdateRegValue("fpu-OM",int((fcr&0x0008)!=0))+' '+
