@@ -160,6 +160,8 @@ class x86regs(Dashboard.Module):
             regNames=["EAX","ECX","EDX","EBX","ESP","EBP","ESI","EDI"]
             regValues=run('printf "%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x",'+
                           '$eax,$ecx,$edx,$ebx,$esp,$ebp,$esi,$edi').split(',')
+            origAX=run('printf "%08x",$orig_eax')
+            origAXint=gdb.parse_and_eval("$orig_eax")
             if len(regValues)!=8:
                 raise Exception("32-bit general-purpose registers unavailable")
         else:
@@ -169,6 +171,8 @@ class x86regs(Dashboard.Module):
                           '%016lx,%016lx,%016lx,%016lx,%016lx,%016lx,%016lx,%016lx",'+
                           '$rax,$rcx,$rdx,$rbx,$rsp,$rbp,$rsi,$rdi,'+
                           '$r8,$r9,$r10,$r11,$r12,$r13,$r14,$r15').split(',')
+            origAX=run('printf "%016lx",$orig_rax')
+            origAXint=gdb.parse_and_eval("$orig_rax")
             if len(regValues)!=16:
                 raise Exception("64-bit general-purpose registers unavailable")
 
@@ -177,6 +181,8 @@ class x86regs(Dashboard.Module):
         for name in regNames:
             value=regs[name]
             registers.append(self.formatAndUpdateReg(name,value))
+        if origAXint!=-1:
+            registers[0]+=self.formatGrayedOut(" orig: "+origAX)
         return registers
 
     def linesPC(self,termWidth,styleChanged):
