@@ -400,6 +400,45 @@ class x86regs(Dashboard.Module):
             lines.append(name+' '+tagString+' '+value)
         return lines
 
+    def linesSIMD(self,regNamesGDB,regBitLen):
+        # 32-bit components are always present with the same name pattern in "[XYZ]?MM[0-9]+" registers.
+        # 64-bit one is named differently e.g. in MMX registers, 128-bit one in SSE,
+        # 256-bit one doesn't exist anywhere at all.
+        componentCount=regBitLen/32
+        component32Name='v'+str(componentCount)+"_int32"
+        regValues=[]
+        for reg in regNamesGDB:
+            gdbFormatString=(',%08x'*componentCount)[1:]
+            compNamesStr=','.join([reg+'.'+component32Name+'['+str(comp)+']' for comp in range(componentCount)])
+            try:
+                vals=run('printf "'+gdbFormatString+'",'+compNamesStr).split(',')
+            except Exception:
+                return [] # The SIMD extension may be unsupported, fail gracefully
+            if len(vals)!=componentCount:
+                raise Exception("Bad component count for register "+reg+": "+str(len(vals)))
+            vals=vals[::-1]
+            # TODO: give the user a choice in what format and sizes to present SIMD registers
+            regValues.append(self.formatAndUpdateReg(reg[1:].upper(),' '.join(vals)))
+        return regValues
+
+    def linesMMX(self,termWidth,styleChanged):
+        regNames=["$mm%u" % n for n in range(8)]
+        return self.linesSIMD(regNames,64)
+
+    def linesSSE(self,termWidth,styleChanged):
+        if self.bits==64:
+            regNames=["$xmm%u" % n for n in range(16)]
+        else:
+            regNames=["$xmm%u" % n for n in range(8)]
+        return self.linesSIMD(regNames,128)
+
+    def linesAVX(self,termWidth,styleChanged):
+        if self.bits==64:
+            regNames=["$ymm%u" % n for n in range(16)]
+        else:
+            regNames=["$ymm%u" % n for n in range(8)]
+        return self.linesSIMD(regNames,256)
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -421,6 +460,9 @@ class x86regs(Dashboard.Module):
             theLines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
             theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
+            theLines+=['']+self.linesMMX(termWidth,styleChanged)
+            theLines+=['']+self.linesSSE(termWidth,styleChanged)
+            theLines+=['']+self.linesAVX(termWidth,styleChanged)
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
