@@ -1,5 +1,5 @@
 class x86regs(Dashboard.Module):
-    "x86 general-purpose registers view"
+    "x86 registers view"
 
     knownRegs=[
                 "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi",
