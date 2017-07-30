@@ -433,6 +433,10 @@ class x86regs(Dashboard.Module):
         regNames=["$ymm%u" % n for n in range(self.sseRegCount)]
         return self.linesSIMD(regNames,256)
 
+    def linesAVX512(self,termWidth,styleChanged):
+        regNames=["$zmm%u" % n for n in range(self.sseRegCount)]
+        return self.linesSIMD(regNames,512)
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
@@ -463,6 +467,7 @@ class x86regs(Dashboard.Module):
             theLines+=['']+self.linesMMX(termWidth,styleChanged)
             theLines+=['']+self.linesSSE(termWidth,styleChanged)
             theLines+=['']+self.linesAVX(termWidth,styleChanged)
+            theLines+=['']+self.linesAVX512(termWidth,styleChanged)
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
