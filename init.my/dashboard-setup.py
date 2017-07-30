@@ -426,17 +426,11 @@ class x86regs(Dashboard.Module):
         return self.linesSIMD(regNames,64)
 
     def linesSSE(self,termWidth,styleChanged):
-        if self.bits==64:
-            regNames=["$xmm%u" % n for n in range(16)]
-        else:
-            regNames=["$xmm%u" % n for n in range(8)]
+        regNames=["$xmm%u" % n for n in range(self.sseRegCount)]
         return self.linesSIMD(regNames,128)
 
     def linesAVX(self,termWidth,styleChanged):
-        if self.bits==64:
-            regNames=["$ymm%u" % n for n in range(16)]
-        else:
-            regNames=["$ymm%u" % n for n in range(8)]
+        regNames=["$ymm%u" % n for n in range(self.sseRegCount)]
         return self.linesSIMD(regNames,256)
 
     def lines(self,termWidth,styleChanged):
@@ -445,6 +439,12 @@ class x86regs(Dashboard.Module):
             self.bits=64
         else:
             self.bits=32
+
+        if str(gdb.parse_and_eval("$xmm31"))=="void":
+            self.sseRegCount=16 if self.bits==64 else 8
+        else:
+            self.sseRegCount=32
+
         try:
             theLines=(self.linesGPR(termWidth,styleChanged)+['']+
                       self.linesPC(termWidth,styleChanged)+[''])
