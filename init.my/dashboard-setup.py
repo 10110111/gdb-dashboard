@@ -5,7 +5,7 @@ class x86regs(Dashboard.Module):
         self.table={}
 
     def label(self):
-        return 'GPRs'
+        return 'Registers'
 
     @staticmethod
     def formatRegName(name):
