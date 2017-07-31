@@ -455,6 +455,9 @@ class x86regs(Dashboard.Module):
 
     def linesSSEAVXbase(self,termWidth,styleChanged,regNameBase,regBitLen):
         regNames=[(regNameBase+"%u") % n for n in range(self.sseRegCount)]
+        if len(regNames)>=10:
+            for i in range(10):
+                regNames[i]+=' '
         return self.linesSIMD(regNames,regBitLen)
     def linesSSE(self,termWidth,styleChanged):
         return self.linesSSEAVXbase(termWidth,styleChanged,"$xmm",128)
