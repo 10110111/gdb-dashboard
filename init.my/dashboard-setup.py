@@ -453,17 +453,21 @@ class x86regs(Dashboard.Module):
         regNames=["$mm%u" % n for n in range(8)]
         return self.linesSIMD(regNames,64)
 
+    def linesSSEAVXbase(self,termWidth,styleChanged,regNameBase,regBitLen):
+        regNames=[(regNameBase+"%u") % n for n in range(self.sseRegCount)]
+        return self.linesSIMD(regNames,regBitLen)
     def linesSSE(self,termWidth,styleChanged):
-        regNames=["$xmm%u" % n for n in range(self.sseRegCount)]
-        return self.linesSIMD(regNames,128)
-
+        return self.linesSSEAVXbase(termWidth,styleChanged,"$xmm",128)
     def linesAVX(self,termWidth,styleChanged):
-        regNames=["$ymm%u" % n for n in range(self.sseRegCount)]
-        return self.linesSIMD(regNames,256)
-
+        return self.linesSSEAVXbase(termWidth,styleChanged,"$ymm",256)
     def linesAVX512(self,termWidth,styleChanged):
-        regNames=["$zmm%u" % n for n in range(self.sseRegCount)]
-        return self.linesSIMD(regNames,512)
+        return self.linesSSEAVXbase(termWidth,styleChanged,"$zmm",512)
+    def linesSSEAVX(self,termWidth,styleChanged):
+        avx512=self.linesAVX512(termWidth,styleChanged)
+        if len(avx512)>0: return avx512
+        avx=self.linesAVX(termWidth,styleChanged)
+        if len(avx)>0: return avx
+        return self.linesSSE(termWidth,styleChanged)
 
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
@@ -503,9 +507,7 @@ class x86regs(Dashboard.Module):
             theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
             theLines+=['']+self.linesMMX(termWidth,styleChanged)
-            theLines+=['']+self.linesSSE(termWidth,styleChanged)
-            theLines+=['']+self.linesAVX(termWidth,styleChanged)
-            theLines+=['']+self.linesAVX512(termWidth,styleChanged)
+            theLines+=['']+self.linesSSEAVX(termWidth,styleChanged)
             theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
