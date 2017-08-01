@@ -437,14 +437,13 @@ class x86regs(Dashboard.Module):
         regValues=[]
         for reg in regNamesGDB:
             gdbFormatString=(',%08x'*componentCount)[1:]
-            compNamesStr=','.join([reg+'.'+component32Name+'['+str(comp)+']' for comp in range(componentCount)])
+            compNamesStr=','.join([reg+'.'+component32Name+'['+str(comp)+']' for comp in range(componentCount-1,-1,-1)])
             try:
                 vals=run('printf "'+gdbFormatString+'",'+compNamesStr).split(',')
             except Exception:
                 return [] # The SIMD extension may be unsupported, fail gracefully
             if len(vals)!=componentCount:
                 raise Exception("Bad component count for register "+reg+": "+str(len(vals)))
-            vals=vals[::-1]
             # TODO: give the user a choice in what format and sizes to present SIMD registers
             regValues.append(self.formatAndUpdateReg(reg[1:].upper(),' '.join(vals)))
         return regValues
