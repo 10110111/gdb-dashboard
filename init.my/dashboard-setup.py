@@ -510,22 +510,76 @@ class x86regs(Dashboard.Module):
 
         try:
             theLines=(self.linesGPR(termWidth,styleChanged)+['']+
-                      self.linesPC(termWidth,styleChanged)+[''])
-            efl=self.linesEFL(termWidth,styleChanged)
-            seg=self.linesSegReg(termWidth,styleChanged)
-            if len(efl)<len(seg):
-                raise Exception("BUG: EFL has fewer lines than segReg")
-            for i in range(len(efl)):
-                if i<len(seg):
-                    theLines.append(efl[i]+'  '+seg[i])
-                else:
-                    theLines.append(efl[i])
-            theLines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
-            theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
-            theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
-            theLines+=['']+self.linesMMX(termWidth,styleChanged)
-            theLines+=['']+self.linesSSEAVX(termWidth,styleChanged)
-            theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
+                      self.linesPC(termWidth,styleChanged))
+            if self.shouldShowEFLAndSeg:
+                theLines.append('')
+                efl=self.linesEFL(termWidth,styleChanged)
+                seg=self.linesSegReg(termWidth,styleChanged)
+                if len(efl)<len(seg):
+                    raise Exception("BUG: EFL has fewer lines than segReg")
+                for i in range(len(efl)):
+                    if i<len(seg):
+                        theLines.append(efl[i]+'  '+seg[i])
+                    else:
+                        theLines.append(efl[i])
+            if self.shouldShowFPUData:
+                theLines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
+            if self.shouldShowFPUSR:
+                theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
+            if self.shouldShowFPUOp:
+                theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
+            if self.shouldShowMMX:
+                theLines+=['']+self.linesMMX(termWidth,styleChanged)
+            if self.shouldShowSSEAVX:
+                theLines+=['']+self.linesSSEAVX(termWidth,styleChanged)
+            if self.shouldShowMXCSR:
+                theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return theLines
         except Exception,e:
             return [str(e)]
+
+    def attributes(self):
+        return {
+            'show-eflseg': {
+                'doc': "Whether to show EFLAGS and segment registers",
+                'default': True,
+                'name': 'shouldShowEFLAndSeg',
+                'type': bool,
+            },
+            'show-sseavx': {
+                'doc': "Whether to show SSE/AVX registers",
+                'default': True,
+                'name': 'shouldShowSSEAVX',
+                'type': bool,
+            },
+            'show-mxcsr': {
+                'doc': "Whether to show MXCSR register",
+                'default': True,
+                'name': 'shouldShowMXCSR',
+                'type': bool,
+            },
+            'show-fpu-data': {
+                'doc': "Whether to show FPU data registers",
+                'default': True,
+                'name': 'shouldShowFPUData',
+                'type': bool,
+            },
+            'show-fpu-sr': {
+                'doc': "Whether to show FPU status and control registers",
+                'default': True,
+                'name': 'shouldShowFPUSR',
+                'type': bool,
+            },
+            'show-fpu-op': {
+                'doc': "Whether to show FPU last operation registers",
+                'default': True,
+                'name': 'shouldShowFPUOp',
+                'type': bool,
+            },
+            'show-mmx': {
+                'doc': "Whether to show MMX registers",
+                'default': False,
+                'name': 'shouldShowMMX',
+                'type': bool,
+            },
+        }
