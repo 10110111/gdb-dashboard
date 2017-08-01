@@ -428,6 +428,20 @@ class x86regs(Dashboard.Module):
             lines.append(name+' '+tagString+' '+value)
         return lines
 
+    def formatSIMDReg(self,regName,rawValStr,elems):
+        savedValue=self.table.get(regName,None)
+        self.table[regName]=rawValStr
+        elemRawStrSize=len(rawValStr)/len(elems)
+        formatted=[]
+        for i in range(len(elems)):
+            if savedValue:
+                off=i*elemRawStrSize
+                changed = rawValStr[off:off+elemRawStrSize]!=savedValue[off:off+elemRawStrSize]
+            else:
+                changed = False
+            formatted.append(self.formatRegValue(elems[i],changed))
+        return formatted
+
     def linesSIMD(self,regNamesGDB,regBitLen):
         # 32-bit components are always present with the same name pattern in "[XYZ]?MM[0-9]+" registers.
         # 64-bit one is named differently e.g. in MMX registers, 128-bit one in SSE,
@@ -442,10 +456,11 @@ class x86regs(Dashboard.Module):
                 vals=run('printf "'+gdbFormatString+'",'+compNamesStr).split(',')
             except Exception:
                 return [] # The SIMD extension may be unsupported, fail gracefully
+            formattedVals=self.formatSIMDReg(reg,''.join(vals),vals)
             if len(vals)!=componentCount:
                 raise Exception("Bad component count for register "+reg+": "+str(len(vals)))
             # TODO: give the user a choice in what format and sizes to present SIMD registers
-            regValues.append(self.formatAndUpdateReg(reg[1:].upper(),' '.join(vals)))
+            regValues.append(self.formatRegName(reg[1:].upper())+' '+' '.join(formattedVals))
         return regValues
 
     def linesMMX(self,termWidth,styleChanged):
