@@ -54,7 +54,7 @@ class x86regs(Dashboard.Module):
         return ansi(value,R.style_selected_1 if changed else '')
     @classmethod
     def formatReg(self,name,value,changed):
-        return self.formatRegName(name)+' '+x86regs.formatRegValue(value,changed)
+        return self.formatRegName(name)+' '+self.formatRegValue(value,changed)
     @staticmethod
     def getSymbolicPos(addrStr):
         addrWithSymPos=run("x/i $pc").split('\t')[0]
@@ -186,7 +186,7 @@ class x86regs(Dashboard.Module):
         return self.formatReg(name,value,changed)
     def formatAndUpdateRegValue(self,name,value):
         changed=self.checkAndUpdateChanged(name,value)
-        return x86regs.formatRegValue(value,changed)
+        return self.formatRegValue(value,changed)
     def formatAndUpdateFlag(self,name,value):
         changed=self.checkAndUpdateChanged('flag'+name,value)
         return self.formatReg(name[0],value,changed)
