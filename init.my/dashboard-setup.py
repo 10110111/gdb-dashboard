@@ -41,7 +41,7 @@ class x86regs(Dashboard.Module):
                     if reg not in knownRegs:
                         self.unknownRegs.append(reg)
         if len(self.unknownRegs)>0:
-            print "WARNING: the following registers are not supported by this viewer:",self.unknownRegs
+            print "WARNING: the following registers are not supported by this viewer:",', '.join(self.unknownRegs)
         self.checkedAllRegsKnown=True
 
     def label(self):
