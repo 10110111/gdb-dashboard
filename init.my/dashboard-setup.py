@@ -490,7 +490,7 @@ class x86regs(Dashboard.Module):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
             self.bits=64
-        else:
+        elif " i386" in arch:
             self.bits=32
 
         if str(gdb.parse_and_eval("$xmm31"))=="void":
