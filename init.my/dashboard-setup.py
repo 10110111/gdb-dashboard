@@ -194,7 +194,7 @@ class x86regs(Dashboard.Module):
         changed=self.checkAndUpdateChanged('fpu-tag-%x' % index,value)
         return self.formatRegValue(self.fpuTagString(value),changed)
 
-    def linesGPR(self,termWidth,styleChanged):
+    def linesGPR_x86(self,termWidth,styleChanged):
         if self.bits==32:
             regNames=["EAX","ECX","EDX","EBX","ESP","EBP","ESI","EDI"]
             regValues=run('printf "%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x",'+
@@ -224,7 +224,7 @@ class x86regs(Dashboard.Module):
             registers[0]+=self.formatGrayedOut(" orig: "+origAX)
         return registers
 
-    def linesPC(self,termWidth,styleChanged):
+    def linesPC_x86(self,termWidth,styleChanged):
         if self.bits==32:
             name="EIP"
             value=run(r'printf "%08x", $pc')
@@ -506,8 +506,8 @@ class x86regs(Dashboard.Module):
         self.checkAllRegsAreKnown(self.knownRegsX86)
 
         try:
-            lines=(self.linesGPR(termWidth,styleChanged)+['']+
-                      self.linesPC(termWidth,styleChanged))
+            lines=(self.linesGPR_x86(termWidth,styleChanged)+['']+
+                      self.linesPC_x86(termWidth,styleChanged))
             if self.shouldShowEFLAndSeg:
                 lines.append('')
                 efl=self.linesEFL(termWidth,styleChanged)
