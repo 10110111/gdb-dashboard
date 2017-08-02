@@ -27,7 +27,8 @@ class archRegs(Dashboard.Module):
                 "zmm24", "zmm25", "zmm26", "zmm27", "zmm28", "zmm29", "zmm30", "zmm31",
               ]
     knownRegsARM=[
-                "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc"
+                "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc",
+                "cpsr",
               ]
 
     def __init__(self):
@@ -539,6 +540,53 @@ class archRegs(Dashboard.Module):
         except Exception,e:
             return [str(e)]
 
+    def linesCPS(self,termWidth,styleChanged):
+        value=run('printf "%08x", $cpsr')
+        lines=[]
+        lines.append(self.formatAndUpdateReg("CPS",value))
+        lines.append(self.formatRegName("    3 2 1 0   N Z C V Q J E T"))
+
+        GE3bit=0x80000
+        GE2bit=0x40000
+        GE1bit=0x20000
+        GE0bit=0x10000
+        Nbit=0x80000000
+        Zbit=0x40000000
+        Cbit=0x20000000
+        Vbit=0x10000000
+        Qbit=0x08000000
+        Jbit=0x01000000
+        Ebit=0x00000200
+        Tbit=0x00000020
+        cps=int(value,16)
+        GE3=int((cps&GE3bit)!=0)
+        GE2=int((cps&GE2bit)!=0)
+        GE1=int((cps&GE1bit)!=0)
+        GE0=int((cps&GE0bit)!=0)
+        N=int((cps&Nbit)!=0)
+        Z=int((cps&Zbit)!=0)
+        C=int((cps&Cbit)!=0)
+        V=int((cps&Vbit)!=0)
+        Q=int((cps&Qbit)!=0)
+        J=int((cps&Jbit)!=0)
+        E=int((cps&Ebit)!=0)
+        T=int((cps&Tbit)!=0)
+        lines.append(self.formatRegName(" GE"))
+        lines[-1]+=' '+self.formatAndUpdateRegValue("GE3",GE3)
+        lines[-1]+=' '+self.formatAndUpdateRegValue("GE2",GE2)
+        lines[-1]+=' '+self.formatAndUpdateRegValue("GE1",GE1)
+        lines[-1]+=' '+self.formatAndUpdateRegValue("GE0",GE0)
+        lines[-1]+="  "
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "N" , N )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "Z" , Z )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "C" , C )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "V" , V )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "Q" , Q )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "J" , J )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "E" , E )
+        lines[-1]+=' '+self.formatAndUpdateRegValue( "T" , T )
+        return lines
+
     def linesGPR_ARM(self,termWidth,styleChanged):
         regNames=["R0 ","R1 ","R2 ","R3 ","R4 ","R5 ","R6 ","R7 ","R8 ","R9 ","R10","R11","R12","SP ","LR ","PC "]
         regValues=run('printf "%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x",$r0,$r1,$r2,$r3,$r4,$r5,$r6,$r7,$r8,$r9,$r10,$r11,$r12,$sp,$lr,$pc').split(',')
@@ -556,6 +604,7 @@ class archRegs(Dashboard.Module):
     def linesARM(self,termWidth,styleChanged):
         self.checkAllRegsAreKnown(self.knownRegsARM)
         lines=self.linesGPR_ARM(termWidth,styleChanged)
+        lines+=['']+self.linesCPS(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
