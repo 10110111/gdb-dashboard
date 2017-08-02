@@ -34,14 +34,15 @@ class x86regs(Dashboard.Module):
 
     def checkAllRegsAreKnown(self,knownRegs):
         if not self.checkedAllRegsKnown:
-            infoAllRegs=run("info all-registers")
+            infoAllRegs=run("info all-registers").split('\n')
             for string in infoAllRegs:
                 if re.match("^[a-zA-Z0-9]+ .*",string):
                     reg=string.split(' ')[0]
                     if reg not in knownRegs:
                         self.unknownRegs.append(reg)
         if len(self.unknownRegs)>0:
-            print "WARNING: the following registers are not supported by this viewer:",unknownRegs
+            print "WARNING: the following registers are not supported by this viewer:",self.unknownRegs
+        self.checkedAllRegsKnown=True
 
     def label(self):
         return 'Registers'
