@@ -506,32 +506,32 @@ class x86regs(Dashboard.Module):
         self.checkAllRegsAreKnown(self.knownRegsX86)
 
         try:
-            theLines=(self.linesGPR(termWidth,styleChanged)+['']+
+            lines=(self.linesGPR(termWidth,styleChanged)+['']+
                       self.linesPC(termWidth,styleChanged))
             if self.shouldShowEFLAndSeg:
-                theLines.append('')
+                lines.append('')
                 efl=self.linesEFL(termWidth,styleChanged)
                 seg=self.linesSegReg(termWidth,styleChanged)
                 if len(efl)<len(seg):
                     raise Exception("BUG: EFL has fewer lines than segReg")
                 for i in range(len(efl)):
                     if i<len(seg):
-                        theLines.append(efl[i]+'  '+seg[i])
+                        lines.append(efl[i]+'  '+seg[i])
                     else:
-                        theLines.append(efl[i])
+                        lines.append(efl[i])
             if self.shouldShowFPUData:
-                theLines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
+                lines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
             if self.shouldShowFPUSR:
-                theLines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
+                lines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
             if self.shouldShowFPUOp:
-                theLines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
+                lines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
             if self.shouldShowMMX:
-                theLines+=['']+self.linesMMX(termWidth,styleChanged)
+                lines+=['']+self.linesMMX(termWidth,styleChanged)
             if self.shouldShowSSEAVX:
-                theLines+=['']+self.linesSSEAVX(termWidth,styleChanged)
+                lines+=['']+self.linesSSEAVX(termWidth,styleChanged)
             if self.shouldShowMXCSR:
-                theLines+=['']+self.linesMXCSR(termWidth,styleChanged)
-            return theLines
+                lines+=['']+self.linesMXCSR(termWidth,styleChanged)
+            return lines
         except Exception,e:
             return [str(e)]
 
