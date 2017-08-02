@@ -32,6 +32,17 @@ class x86regs(Dashboard.Module):
         self.checkedAllRegsKnown=False
         self.unknownRegs=[]
 
+    def checkAllRegsAreKnown(self,knownRegs):
+        if not self.checkedAllRegsKnown:
+            infoAllRegs=run("info all-registers")
+            for string in infoAllRegs:
+                if re.match("^[a-zA-Z0-9]+ .*",string):
+                    reg=string.split(' ')[0]
+                    if reg not in knownRegs:
+                        self.unknownRegs.append(reg)
+        if len(self.unknownRegs)>0:
+            print "WARNING: the following registers are not supported by this viewer:",unknownRegs
+
     def label(self):
         return 'Registers'
 
@@ -492,15 +503,7 @@ class x86regs(Dashboard.Module):
         else:
             self.sseRegCount=32
 
-        if not self.checkedAllRegsKnown:
-            infoAllRegs=run("info all-registers")
-            for string in infoAllRegs:
-                if re.match("^[a-zA-Z0-9]+ .*",string):
-                    reg=string.split(' ')[0]
-                    if reg not in self.knownRegsX86:
-                        self.unknownRegs.append(reg)
-        if len(self.unknownRegs)>0:
-            print "WARNING: the following registers are not supported by this viewer:",unknownRegs
+        self.checkAllRegsAreKnown(self.knownRegsX86)
 
         try:
             theLines=(self.linesGPR(termWidth,styleChanged)+['']+
