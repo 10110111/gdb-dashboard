@@ -486,13 +486,7 @@ class x86regs(Dashboard.Module):
         if len(avx)>0: return avx
         return self.linesSSE(termWidth,styleChanged)
 
-    def lines(self,termWidth,styleChanged):
-        arch=run("show arch")
-        if " i386:x64-32" in arch or " i386:x86-64" in arch:
-            self.bits=64
-        elif " i386" in arch:
-            self.bits=32
-
+    def linesX86(self,termWidth,styleChanged):
         if str(gdb.parse_and_eval("$xmm31"))=="void":
             self.sseRegCount=16 if self.bits==64 else 8
         else:
@@ -537,6 +531,18 @@ class x86regs(Dashboard.Module):
             return theLines
         except Exception,e:
             return [str(e)]
+
+    def lines(self,termWidth,styleChanged):
+        arch=run("show arch")
+        if " i386:x64-32" in arch or " i386:x86-64" in arch:
+            self.bits=64
+        elif " i386" in arch:
+            self.bits=32
+
+        if " i386" in arch:
+            return self.linesX86(termWidth,styleChanged)
+        else:
+            return ["unsupported architecture, use generic Registers module"]
 
     def attributes(self):
         return {
