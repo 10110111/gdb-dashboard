@@ -1,5 +1,5 @@
-class x86regs(Dashboard.Module):
-    "x86 registers view"
+class archRegs(Dashboard.Module):
+    "Arch-centric registers view"
 
     knownRegsX86=[
                 "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi",
@@ -25,6 +25,9 @@ class x86regs(Dashboard.Module):
                 "zmm8", "zmm9", "zmm10", "zmm11", "zmm12", "zmm13", "zmm14", "zmm15",
                 "zmm16", "zmm17", "zmm18", "zmm19", "zmm20", "zmm21", "zmm22", "zmm23",
                 "zmm24", "zmm25", "zmm26", "zmm27", "zmm28", "zmm29", "zmm30", "zmm31",
+              ]
+    knownRegsARM=[
+                "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc"
               ]
 
     def __init__(self):
@@ -536,15 +539,38 @@ class x86regs(Dashboard.Module):
         except Exception,e:
             return [str(e)]
 
+    def linesGPR_ARM(self,termWidth,styleChanged):
+        regNames=["R0 ","R1 ","R2 ","R3 ","R4 ","R5 ","R6 ","R7 ","R8 ","R9 ","R10","R11","R12","SP ","LR ","PC "]
+        regValues=run('printf "%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x,%08x",$r0,$r1,$r2,$r3,$r4,$r5,$r6,$r7,$r8,$r9,$r10,$r11,$r12,$sp,$lr,$pc').split(',')
+
+        regs=dict(zip(regNames,regValues))
+        registers=[]
+        for name in regNames:
+            value=regs[name]
+            registers.append(self.formatAndUpdateReg(name,value))
+
+        symbolicPos=self.getSymbolicPos("$pc")
+        registers[-1]+=' '+self.formatGrayedOut(symbolicPos)
+        return registers
+
+    def linesARM(self,termWidth,styleChanged):
+        self.checkAllRegsAreKnown(self.knownRegsARM)
+        lines=self.linesGPR_ARM(termWidth,styleChanged)
+        return lines
+
     def lines(self,termWidth,styleChanged):
         arch=run("show arch")
         if " i386:x64-32" in arch or " i386:x86-64" in arch:
             self.bits=64
         elif " i386" in arch:
             self.bits=32
+        elif " arm" in arch:
+            self.bits=32
 
         if " i386" in arch:
             return self.linesX86(termWidth,styleChanged)
+        elif " arm" in arch:
+            return self.linesARM(termWidth,styleChanged)
         else:
             return ["unsupported architecture, use generic Registers module"]
 
