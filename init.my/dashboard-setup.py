@@ -644,8 +644,8 @@ class archRegs(Dashboard.Module):
     def linesCPS(self,termWidth,styleChanged):
         value=run('printf "%08x", $cpsr')
         lines=[]
-        lines.append(self.formatAndUpdateReg("CPS",value))
-        lines.append(self.formatRegName("    3 2 1 0   N Z C V Q J E T"))
+        cpsLine=self.formatAndUpdateReg("CPS",value)
+        flagNamesLine=self.formatRegName("    3 2 1 0   N Z C V Q J E T")
 
         GE3bit=0x80000
         GE2bit=0x40000
@@ -672,20 +672,20 @@ class archRegs(Dashboard.Module):
         J=int((cps&Jbit)!=0)
         E=int((cps&Ebit)!=0)
         T=int((cps&Tbit)!=0)
-        lines.append(self.formatRegName(" GE"))
-        lines[-1]+=' '+self.formatAndUpdateRegValue("GE3",GE3)
-        lines[-1]+=' '+self.formatAndUpdateRegValue("GE2",GE2)
-        lines[-1]+=' '+self.formatAndUpdateRegValue("GE1",GE1)
-        lines[-1]+=' '+self.formatAndUpdateRegValue("GE0",GE0)
-        lines[-1]+="  "
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "N" , N )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "Z" , Z )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "C" , C )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "V" , V )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "Q" , Q )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "J" , J )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "E" , E )
-        lines[-1]+=' '+self.formatAndUpdateRegValue( "T" , T )
+        flagValuesLine = self.formatRegName(" GE")
+        flagValuesLine += ' '+self.formatAndUpdateRegValue("GE3",GE3)
+        flagValuesLine += ' '+self.formatAndUpdateRegValue("GE2",GE2)
+        flagValuesLine += ' '+self.formatAndUpdateRegValue("GE1",GE1)
+        flagValuesLine += ' '+self.formatAndUpdateRegValue("GE0",GE0)
+        flagValuesLine += "  "
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "N" , N )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "Z" , Z )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "C" , C )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "V" , V )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "Q" , Q )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "J" , J )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "E" , E )
+        flagValuesLine += ' '+self.formatAndUpdateRegValue( "T" , T )
         comment  = " ("
         comment += "EQ," if        Z       else "NE,"
         comment += "HS," if        C       else "LO,"
@@ -695,7 +695,9 @@ class archRegs(Dashboard.Module):
         comment += "GE," if      N==V      else "LT,"
         comment += "GT"  if N==V and not Z else "LE"
         comment += ")"
-        lines[0] += self.formatGrayedOut(comment)
+        lines.append(cpsLine+self.formatGrayedOut(comment))
+        lines.append(flagNamesLine)
+        lines.append(flagValuesLine)
         return lines
 
     def linesGPR_ARM(self,termWidth,styleChanged):
