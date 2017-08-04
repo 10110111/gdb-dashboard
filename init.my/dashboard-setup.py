@@ -686,6 +686,16 @@ class archRegs(Dashboard.Module):
         lines[-1]+=' '+self.formatAndUpdateRegValue( "J" , J )
         lines[-1]+=' '+self.formatAndUpdateRegValue( "E" , E )
         lines[-1]+=' '+self.formatAndUpdateRegValue( "T" , T )
+        comment  = " ("
+        comment += "EQ," if        Z       else "NE,"
+        comment += "HS," if        C       else "LO,"
+        comment += "MI," if        N       else "PL,"
+        comment += "VS," if        V       else "VC,"
+        comment += "HI," if   C and not Z  else "LS,"
+        comment += "GE," if      N==V      else "LT,"
+        comment += "GT"  if N==V and not Z else "LE"
+        comment += ")"
+        lines[0] += self.formatGrayedOut(comment)
         return lines
 
     def linesGPR_ARM(self,termWidth,styleChanged):
