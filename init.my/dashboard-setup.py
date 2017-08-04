@@ -30,6 +30,9 @@ class archRegs(Dashboard.Module):
                 "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc",
                 "cpsr",
                 "fpscr",
+                "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+                "s12", "s13", "s14", "s15", "s16", "s17", "s18", "s19", "s20", "s21",
+                "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31",
               ]
 
     def __init__(self):
@@ -167,6 +170,14 @@ class archRegs(Dashboard.Module):
         if type[0]=="BAD":
             result+="  "+type[1]
         return result
+
+    @staticmethod
+    def formatNaN32(raw):
+        value=int(raw,16)
+        if (value&0x7fc00000)==0x7f800000:
+            return "SNAN "+raw
+        else:
+            return "QNAN "+raw
 
     @staticmethod
     def formatGrayedOutLinuxVT(value):
@@ -566,6 +577,28 @@ class archRegs(Dashboard.Module):
                  2: "DOWN",
                  3: "ZERO" }[mode]
 
+    def linesVFPData32(self,termWidth,styleChanged):
+        regCount=32 # regardless of VFPv2/3 support
+        values=run('printf "'+(',%.9g'*regCount)[1:]+'", '+','.join(['$s%d'%n for n in range(regCount)])).split(',')
+        if len(values)!=regCount:
+            raise Exception("Bad register count for VFP 32-bit data registers: expected "+
+                            str(regCount)+", got "+str(len(values)))
+        lines=[]
+        for i in range(len(values)):
+            regStr=values[i]
+            if  regStr=="-inf": regStr="-INF"
+            elif regStr=="inf": regStr="+INF"
+            elif regStr=="nan" or regStr=="-nan":
+                raw=re.sub("$[0-9]+ = 0x([0-9a-f]+).*","\\1",run("print/z $s"+str(i)))
+                regStr=formatNaN32(raw)
+            elif regStr=="0": regStr="0.0"
+            elif regStr=="-0": regStr="-0.0"
+            lines.append(self.formatAndUpdateReg("S%-2d"%i,"%-15s"%regStr,"vfp-"))
+        finalLines=lines[0:16]
+        for i in range(16):
+            finalLines[i]+="  "+lines[16+i]
+        return finalLines
+
     def linesFSC(self,termWidth,styleChanged):
 # FSC 8100009b  N Z C V       D X U O Z I
 #     Rnd NEAR  1 0 0 0  Err  1 1 1 0 1 1
@@ -674,6 +707,7 @@ class archRegs(Dashboard.Module):
         lines=self.linesGPR_ARM(termWidth,styleChanged)
         lines+=['']+self.linesCPS(termWidth,styleChanged)
         lines+=['']+self.linesFSC(termWidth,styleChanged)
+        lines+=['']+self.linesVFPData32(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
