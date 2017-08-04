@@ -403,8 +403,8 @@ class archRegs(Dashboard.Module):
         return lines
 
     def linesLastFPUOp(self,termWidth,styleChanged):
-        offsetFormat = "%016lx" if self.bits==64 else "%08x"
-        regs=run('printf "%04x,%04x,%04x,'+offsetFormat+','+offsetFormat+'",$fop,$fiseg,$foseg,$fioff,$fooff').split(',')
+        # NOTE: on x86_64 offsets are low 32-bit parts, and "segments" are high 16-bit et arts of the address
+        regs=run('printf "%04x,%04x,%04x,%08x,%08x",$fop,$fiseg,$foseg,$fioff,$fooff').split(',')
         if len(regs)!=5:
             raise Exception("Failed to get FPU last operation info")
         fop=regs[0]
@@ -413,9 +413,9 @@ class archRegs(Dashboard.Module):
         fioff=regs[3]
         fooff=regs[4]
         lines=[]
-        lines.append(self.formatAndUpdateReg("Last insn",fiseg,"seg-")+":"+
+        lines.append(self.formatAndUpdateReg("Last insn",fiseg,"seg-")+(":" if self.bits==32 else "")+
                      self.formatAndUpdateRegValue("off-Last insn",fioff))
-        lines.append(self.formatAndUpdateReg("Last data",foseg,"seg-")+":"+
+        lines.append(self.formatAndUpdateReg("Last data",foseg,"seg-")+(":" if self.bits==32 else "")+
                      self.formatAndUpdateRegValue("off-Last data",fooff))
         fop=int(fop,16)
         fop1=(fop>>8)|0xd8
