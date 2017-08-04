@@ -29,6 +29,7 @@ class archRegs(Dashboard.Module):
     knownRegsARM=[
                 "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","sp","lr","pc",
                 "cpsr",
+                "fpscr",
               ]
 
     def __init__(self):
@@ -180,6 +181,24 @@ class archRegs(Dashboard.Module):
             return self.formatGrayedOutLinuxVT(value)
         else:
             return self.formatGrayedOutANSI(value)
+
+    @staticmethod
+    def vfpComparExplain(fpscr):
+        nzcv=fpscr>>28
+        try:
+            return {2: "(GT)",
+                    3: "(Unordered)",
+                    6: "(EQ)",
+                    8: "(LT)"}[nzcv]
+        except:
+            return ""
+
+    @staticmethod
+    def fpscrFormatStride(fpscr):
+        STR=(fpscr>>20)&3
+        if STR==0: return " 1 "
+        elif STR==3: return " 2 "
+        else: return '"%x"' % STR
 
     def checkAndUpdateChanged(self,key,value):
         savedValue=self.table.get(key,None)
@@ -540,6 +559,55 @@ class archRegs(Dashboard.Module):
         except Exception,e:
             return [str(e)]
 
+    @staticmethod
+    def armRoundingModeString(mode):
+        return { 0: "NEAR",
+                 1: "  UP",
+                 2: "DOWN",
+                 3: "ZERO" }[mode]
+
+    def linesFSC(self,termWidth,styleChanged):
+# FSC 8100009b  N Z C V       D X U O Z I
+#     Rnd NEAR  1 0 0 0  Err  1 1 1 0 1 1
+#     DN FTZ STR LEN     Enab 0 0 0 0 0 0
+#     0   1   1   1
+        value=run('printf "%08x", $fpscr')
+        try: fpscr=int(value,16)
+        except: return [] # FPSCR may be unavailable if VFP isn't supported
+        lines=[]
+        lines.append(self.formatAndUpdateReg("FSC",value)+
+                     self.formatRegName("  N Z C V       D X U O Z I"))
+        lines.append("    "+
+                     self.formatAndUpdateReg("Rnd",self.armRoundingModeString((fpscr>>22)&3))+"  "+
+                     self.formatAndUpdateRegValue("fpscr-N",int((fpscr&0x80000000)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-Z",int((fpscr&0x40000000)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-C",int((fpscr&0x20000000)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-V",int((fpscr&0x10000000)!=0))+"  "+
+                     self.formatRegName("Err")+"  "+
+                     self.formatAndUpdateRegValue("fpscr-IDC",int((fpscr&0x80)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-IXC",int((fpscr&0x10)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-UFC",int((fpscr&0x08)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-OFC",int((fpscr&0x04)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-DZC",int((fpscr&0x02)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-IOC",int((fpscr&0x01)!=0)))
+        condCodeExplained=self.vfpComparExplain(fpscr)
+        if condCodeExplained:
+            lines[-1]+=' '+self.formatGrayedOut(condCodeExplained)
+        lines.append("    "+
+                     self.formatRegName("DN FTZ STR LEN     Enab ")+
+                     self.formatAndUpdateRegValue("fpscr-IDE",int((fpscr&0x8000)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-IXE",int((fpscr&0x1000)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-UFE",int((fpscr&0x0800)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-OFE",int((fpscr&0x0400)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-DZE",int((fpscr&0x0200)!=0))+" "+
+                     self.formatAndUpdateRegValue("fpscr-IOE",int((fpscr&0x0100)!=0)))
+        lines.append("    "+
+                     self.formatAndUpdateRegValue("fpscr-DN" ,int((fpscr&0x02000000)!=0))+"   "+
+                     self.formatAndUpdateRegValue("fpscr-FZ" ,int((fpscr&0x01000000)!=0))+"  "+
+                     self.formatAndUpdateRegValue("fpscr-STR",self.fpscrFormatStride(fpscr))+"  "+
+                     self.formatAndUpdateRegValue("fpscr-LEN",((fpscr>>16)&3)+1))
+        return lines
+
     def linesCPS(self,termWidth,styleChanged):
         value=run('printf "%08x", $cpsr')
         lines=[]
@@ -605,6 +673,7 @@ class archRegs(Dashboard.Module):
         self.checkAllRegsAreKnown(self.knownRegsARM)
         lines=self.linesGPR_ARM(termWidth,styleChanged)
         lines+=['']+self.linesCPS(termWidth,styleChanged)
+        lines+=['']+self.linesFSC(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
