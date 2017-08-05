@@ -774,11 +774,16 @@ class archRegs(Dashboard.Module):
     def linesARM(self,termWidth,styleChanged):
         self.checkAllRegsAreKnown(self.knownRegsARM)
         lines=self.linesGPR_ARM(termWidth,styleChanged)
-        lines+=['']+self.linesCPS(termWidth,styleChanged)
-        lines+=['']+self.linesFSC(termWidth,styleChanged)
-        lines+=['']+self.linesVFPData32(termWidth,styleChanged)
-        lines+=['']+self.linesVFPData64(termWidth,styleChanged)
-        lines+=['']+self.linesNEONQ128(termWidth,styleChanged)
+        if self.shouldShowARM_CPSR:
+            lines+=['']+self.linesCPS(termWidth,styleChanged)
+        if self.shouldShowARM_FPSCR:
+            lines+=['']+self.linesFSC(termWidth,styleChanged)
+        if self.shouldShowARM_Sn:
+            lines+=['']+self.linesVFPData32(termWidth,styleChanged)
+        if self.shouldShowARM_Dn:
+            lines+=['']+self.linesVFPData64(termWidth,styleChanged)
+        if self.shouldShowARM_NEON:
+            lines+=['']+self.linesNEONQ128(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
@@ -839,6 +844,36 @@ class archRegs(Dashboard.Module):
                 'doc': "Whether to show MMX registers",
                 'default': False,
                 'name': 'shouldShowMMX',
+                'type': bool,
+            },
+            'show-arm-dn': {
+                'doc': "Whether to show ARM VFP 64-bit data registers",
+                'default': True,
+                'name': 'shouldShowARM_Dn',
+                'type': bool,
+            },
+            'show-arm-sn': {
+                'doc': "Whether to show ARM VFP 32-bit data registers",
+                'default': True,
+                'name': 'shouldShowARM_Sn',
+                'type': bool,
+            },
+            'show-arm-neon': {
+                'doc': "Whether to show ARM NEON 128-bit data registers",
+                'default': True,
+                'name': 'shouldShowARM_NEON',
+                'type': bool,
+            },
+            'show-arm-fpscr': {
+                'doc': "Whether to show ARM FPSCR register",
+                'default': True,
+                'name': 'shouldShowARM_FPSCR',
+                'type': bool,
+            },
+            'show-arm-cpsr': {
+                'doc': "Whether to show ARM CPSR register",
+                'default': True,
+                'name': 'shouldShowARM_CPSR',
                 'type': bool,
             },
         }
