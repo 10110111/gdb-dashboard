@@ -33,6 +33,9 @@ class archRegs(Dashboard.Module):
                 "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
                 "s12", "s13", "s14", "s15", "s16", "s17", "s18", "s19", "s20", "s21",
                 "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31",
+                "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11",
+                "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20", "d21",
+                "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31",
               ]
 
     def __init__(self):
@@ -179,6 +182,15 @@ class archRegs(Dashboard.Module):
             return sign+"SNAN "+raw
         else:
             return sign+"QNAN "+raw
+
+    @staticmethod
+    def formatNaN64(raw):
+        value=int(raw,16)
+        sign='-' if (value&(1<<63)) else '+'
+        if (value&0x7ff8000000000000)==0x7ff0000000000000:
+            return sign+"SNAN "+raw[0:8]+' '+raw[8:]
+        else:
+            return sign+"QNAN "+raw[0:8]+' '+raw[8:]
 
     @staticmethod
     def formatGrayedOutLinuxVT(value):
@@ -578,6 +590,38 @@ class archRegs(Dashboard.Module):
                  2: "DOWN",
                  3: "ZERO" }[mode]
 
+    def linesVFPData64(self,termWidth,styleChanged):
+        regCount=32 # TODO: implement proper support for NEON data types
+        try:
+            values=run('printf "'+(',%.17g'*regCount)[1:]+'", '+','.join(['$d%d'%n for n in range(regCount)])).split(',')
+        except:
+            regCount=16
+            values=run('printf "'+(',%.17g'*regCount)[1:]+'", '+','.join(['$d%d'%n for n in range(regCount)])).split(',')
+
+        if len(values)!=regCount:
+            raise Exception("Bad register count for VFP 64-bit data registers: expected "+
+                            str(regCount)+", got "+str(len(values)))
+        lines=[]
+        for i in range(len(values)):
+            regStr=values[i]
+            if  regStr=="-inf": regStr="-INF"
+            elif regStr=="inf": regStr="+INF"
+            elif regStr=="nan" or regStr=="-nan":
+                try:
+                    raw=re.sub(".*\(raw 0x([^)]+)\).*","\\1",run('info reg d%d' % i)).rstrip()
+                    regStr=self.formatNaN64(raw)
+                except:
+                    raw=re.sub("\\$[0-9]+ = 0x(.*)","\\1",run('print/z $d%d.u64' % i)).rstrip()
+                    regStr=self.formatNaN64(raw)
+            elif regStr=="0": regStr="0.0"
+            elif regStr=="-0": regStr="-0.0"
+            lines.append(self.formatAndUpdateReg("D%-2d"%i,"%-26s"%regStr,"vfp-"))
+        finalLines=lines[0:16]
+        if regCount>16:
+            for i in range(16):
+                finalLines[i]+="  "+lines[16+i]
+        return finalLines
+
     def linesVFPData32(self,termWidth,styleChanged):
         regCount=32 # regardless of VFPv2/3 support
         values=run('printf "'+(',%.9g'*regCount)[1:]+'", '+','.join(['$s%d'%n for n in range(regCount)])).split(',')
@@ -721,6 +765,7 @@ class archRegs(Dashboard.Module):
         lines+=['']+self.linesCPS(termWidth,styleChanged)
         lines+=['']+self.linesFSC(termWidth,styleChanged)
         lines+=['']+self.linesVFPData32(termWidth,styleChanged)
+        lines+=['']+self.linesVFPData64(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
