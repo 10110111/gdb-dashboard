@@ -174,10 +174,11 @@ class archRegs(Dashboard.Module):
     @staticmethod
     def formatNaN32(raw):
         value=int(raw,16)
+        sign='-' if (value&0x80000000) else '+'
         if (value&0x7fc00000)==0x7f800000:
-            return "SNAN "+raw
+            return sign+"SNAN "+raw
         else:
-            return "QNAN "+raw
+            return sign+"QNAN "+raw
 
     @staticmethod
     def formatGrayedOutLinuxVT(value):
