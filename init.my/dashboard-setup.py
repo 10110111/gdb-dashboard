@@ -36,6 +36,8 @@ class archRegs(Dashboard.Module):
                 "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11",
                 "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20", "d21",
                 "d22", "d23", "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31",
+                "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11",
+                "q12", "q13", "q14", "q15",
               ]
 
     def __init__(self):
@@ -647,6 +649,13 @@ class archRegs(Dashboard.Module):
             finalLines[i]+="  "+lines[16+i]
         return finalLines
 
+    def linesNEONQ128(self,termWidth,styleChanged):
+        regNames=["$q%-2u" % n for n in range(16)]
+        regBitLen=128
+        componentCount=regBitLen/32
+        component32Name="u32"
+        return self.linesSIMD(regNames,componentCount,component32Name)
+
     def linesFSC(self,termWidth,styleChanged):
 # FSC 8100009b  N Z C V       D X U O Z I
 #     Rnd NEAR  1 0 0 0  Err  1 1 1 0 1 1
@@ -769,6 +778,7 @@ class archRegs(Dashboard.Module):
         lines+=['']+self.linesFSC(termWidth,styleChanged)
         lines+=['']+self.linesVFPData32(termWidth,styleChanged)
         lines+=['']+self.linesVFPData64(termWidth,styleChanged)
+        lines+=['']+self.linesNEONQ128(termWidth,styleChanged)
         return lines
 
     def lines(self,termWidth,styleChanged):
