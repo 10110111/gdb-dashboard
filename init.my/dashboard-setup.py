@@ -501,12 +501,10 @@ class archRegs(Dashboard.Module):
             formatted.append(self.formatRegValue(elems[i],changed))
         return formatted
 
-    def linesSIMD(self,regNamesGDB,regBitLen):
+    def linesSIMD(self,regNamesGDB,componentCount,component32Name):
         # 32-bit components are always present with the same name pattern in "[XYZ]?MM[0-9]+" registers.
         # 64-bit one is named differently e.g. in MMX registers, 128-bit one in SSE,
         # 256-bit one doesn't exist anywhere at all.
-        componentCount=regBitLen/32
-        component32Name='v'+str(componentCount)+"_int32"
         regValues=[]
         for reg in regNamesGDB:
             gdbFormatString=(',%08x'*componentCount)[1:]
@@ -524,14 +522,19 @@ class archRegs(Dashboard.Module):
 
     def linesMMX(self,termWidth,styleChanged):
         regNames=["$mm%u" % n for n in range(8)]
-        return self.linesSIMD(regNames,64)
+        regBitLen=64
+        componentCount=regBitLen/32
+        component32Name='v'+str(componentCount)+"_int32"
+        return self.linesSIMD(regNames,componentCount,component32Name)
 
     def linesSSEAVXbase(self,termWidth,styleChanged,regNameBase,regBitLen):
         regNames=[(regNameBase+"%u") % n for n in range(self.sseRegCount)]
+        componentCount=regBitLen/32
+        component32Name='v'+str(componentCount)+"_int32"
         if len(regNames)>=10:
             for i in range(10):
                 regNames[i]+=' '
-        return self.linesSIMD(regNames,regBitLen)
+        return self.linesSIMD(regNames,componentCount,component32Name)
     def linesSSE(self,termWidth,styleChanged):
         return self.linesSSEAVXbase(termWidth,styleChanged,"$xmm",128)
     def linesAVX(self,termWidth,styleChanged):
