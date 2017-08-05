@@ -589,8 +589,8 @@ class archRegs(Dashboard.Module):
             if  regStr=="-inf": regStr="-INF"
             elif regStr=="inf": regStr="+INF"
             elif regStr=="nan" or regStr=="-nan":
-                raw=re.sub("$[0-9]+ = 0x([0-9a-f]+).*","\\1",run("print/z $s"+str(i)))
-                regStr=formatNaN32(raw)
+                raw=re.sub(".*\(raw 0x([^)]+)\).*","\\1",run('info reg s%d' % i)).rstrip()
+                regStr=self.formatNaN32(raw)
             elif regStr=="0": regStr="0.0"
             elif regStr=="-0": regStr="-0.0"
             lines.append(self.formatAndUpdateReg("S%-2d"%i,"%-15s"%regStr,"vfp-"))
