@@ -561,7 +561,7 @@ class archRegs(Dashboard.Module):
         try:
             lines=(self.linesGPR_x86(termWidth,styleChanged)+['']+
                       self.linesPC_x86(termWidth,styleChanged))
-            if self.shouldShowEFLAndSeg:
+            if self.shouldShowX86_EFLAndSeg:
                 lines.append('')
                 efl=self.linesEFL(termWidth,styleChanged)
                 seg=self.linesSegReg(termWidth,styleChanged)
@@ -572,17 +572,17 @@ class archRegs(Dashboard.Module):
                         lines.append(efl[i]+'  '+seg[i])
                     else:
                         lines.append(efl[i])
-            if self.shouldShowFPUData:
+            if self.shouldShowX86_FPUData:
                 lines+=['']+self.linesFPUDataRegs(termWidth,styleChanged)
-            if self.shouldShowFPUSR:
+            if self.shouldShowX86_FPUSR:
                 lines+=['']+self.linesFPUStatusAndControl(termWidth,styleChanged)
-            if self.shouldShowFPUOp:
+            if self.shouldShowX86_FPUOp:
                 lines+=['']+self.linesLastFPUOp(termWidth,styleChanged)
-            if self.shouldShowMMX:
+            if self.shouldShowX86_MMX:
                 lines+=['']+self.linesMMX(termWidth,styleChanged)
-            if self.shouldShowSSEAVX:
+            if self.shouldShowX86_SSEAVX:
                 lines+=['']+self.linesSSEAVX(termWidth,styleChanged)
-            if self.shouldShowMXCSR:
+            if self.shouldShowX86_MXCSR:
                 lines+=['']+self.linesMXCSR(termWidth,styleChanged)
             return lines
         except Exception,e:
@@ -804,46 +804,46 @@ class archRegs(Dashboard.Module):
 
     def attributes(self):
         return {
-            'show-eflseg': {
-                'doc': "Whether to show EFLAGS and segment registers",
+            'show-x86-eflseg': {
+                'doc': "Whether to show x86 EFLAGS and segment registers",
                 'default': True,
-                'name': 'shouldShowEFLAndSeg',
+                'name': 'shouldShowX86_EFLAndSeg',
                 'type': bool,
             },
-            'show-sseavx': {
-                'doc': "Whether to show SSE/AVX registers",
+            'show-x86-sseavx': {
+                'doc': "Whether to show x86 SSE/AVX registers",
                 'default': True,
-                'name': 'shouldShowSSEAVX',
+                'name': 'shouldShowX86_SSEAVX',
                 'type': bool,
             },
-            'show-mxcsr': {
-                'doc': "Whether to show MXCSR register",
+            'show-x86-mxcsr': {
+                'doc': "Whether to show x86 MXCSR register",
                 'default': True,
-                'name': 'shouldShowMXCSR',
+                'name': 'shouldShowX86_MXCSR',
                 'type': bool,
             },
-            'show-fpu-data': {
-                'doc': "Whether to show FPU data registers",
+            'show-x86-fpu-data': {
+                'doc': "Whether to show x86 FPU data registers",
                 'default': True,
-                'name': 'shouldShowFPUData',
+                'name': 'shouldShowX86_FPUData',
                 'type': bool,
             },
-            'show-fpu-sr': {
-                'doc': "Whether to show FPU status and control registers",
+            'show-x86-fpu-sr': {
+                'doc': "Whether to show x86 FPU status and control registers",
                 'default': True,
-                'name': 'shouldShowFPUSR',
+                'name': 'shouldShowX86_FPUSR',
                 'type': bool,
             },
-            'show-fpu-op': {
-                'doc': "Whether to show FPU last operation registers",
+            'show-x86-fpu-op': {
+                'doc': "Whether to show x86 FPU last operation registers",
                 'default': True,
-                'name': 'shouldShowFPUOp',
+                'name': 'shouldShowX86_FPUOp',
                 'type': bool,
             },
-            'show-mmx': {
-                'doc': "Whether to show MMX registers",
+            'show-x86-mmx': {
+                'doc': "Whether to show x86 MMX registers",
                 'default': False,
-                'name': 'shouldShowMMX',
+                'name': 'shouldShowX86_MMX',
                 'type': bool,
             },
             'show-arm-dn': {
